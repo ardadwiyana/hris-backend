@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model attendances {
+  id          Int       @id @default(autoincrement())
+  employee_id Int
+  tanggal     DateTime  @db.Date
+  clock_in    DateTime? @db.Time(6)
+  clock_out   DateTime? @db.Time(6)
+  status      String?   @db.VarChar(20)
+  employees   employees @relation(fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_attendance_employee")
+
+  @@unique([employee_id, tanggal], map: "unique_employee_date")
+}
+
+model departments {
+  id              Int         @id @default(autoincrement())
+  nama_departemen String      @db.VarChar(100)
+  employees       employees[]
+  positions       positions[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model employees {
+  id                Int           @id @default(autoincrement())
+  user_id           Int?          @unique
+  nik               String        @unique @db.VarChar(30)
+  nama_lengkap      String        @db.VarChar(100)
+  email             String        @unique @db.VarChar(100)
+  telepon           String?       @db.VarChar(20)
+  alamat            String?
+  department_id     Int?
+  position_id       Int?
+  tanggal_bergabung DateTime      @db.Date
+  status            String        @db.VarChar(20)
+  tanggal_lahir     DateTime?     @db.Date
+  jenis_kelamin     String?       @db.VarChar(10)
+  attendances       attendances[]
+  departments       departments?  @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_employee_department")
+  positions         positions?    @relation(fields: [position_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_employee_position")
+  users             users?        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_employee_user")
+  leaves            leaves[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model leaves {
+  id              Int       @id @default(autoincrement())
+  employee_id     Int
+  tanggal_mulai   DateTime  @db.Date
+  tanggal_selesai DateTime  @db.Date
+  jenis           String    @db.VarChar(30)
+  alasan          String?
+  status          String    @db.VarChar(20)
+  employees       employees @relation(fields: [employee_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_leave_employee")
+}
+
+model positions {
+  id            Int          @id @default(autoincrement())
+  nama_posisi   String       @db.VarChar(100)
+  department_id Int?
+  employees     employees[]
+  departments   departments? @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_department")
+}
+
+model users {
+  id        Int        @id @default(autoincrement())
+  username  String     @unique @db.VarChar(50)
+  password  String     @db.VarChar(255)
+  role      String     @default("employee") @db.VarChar(20)
+  employees employees?
+}
